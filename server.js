@@ -1,23 +1,59 @@
-//start express.js
 const express = require('express');
-const app = express();
-//for the route
 const { animals } = require('./data/animals');
-//add route that front-end can request data from
-// app.get('/api/animals', (req, res) => {
-//     res.send('Hello!');
-//   });
+
+const PORT = process.env.PORT || 3001;
+const app = express();
+
+function filterByQuery(query, animalsArray) {
+  let personalityTraitsArray = [];
+  let filteredResults = animalsArray;
+  if (query.personalityTraits) {
+    if (typeof query.personalityTraits === 'string') {
+      personalityTraitsArray = [query.personalityTraits];
+    } else {
+      personalityTraitsArray = query.personalityTraits;
+    }
+    personalityTraitsArray.forEach(trait => {
+      filteredResults = filteredResults.filter(
+        animal => animal.personalityTraits.indexOf(trait) !== -1
+      );
+    });
+  }
+  if (query.diet) {
+    filteredResults = filteredResults.filter(animal => animal.diet === query.diet);
+  }
+  if (query.species) {
+    filteredResults = filteredResults.filter(animal => animal.species === query.species);
+  }
+  if (query.name) {
+    filteredResults = filteredResults.filter(animal => animal.name === query.name);
+  }
+  return filteredResults;
+}
+
+function findById(id, animalsArray) {
+  const result = animalsArray.filter(animal => animal.id === id)[0];
+  return result;
+}
+
 app.get('/api/animals', (req, res) => {
-    res.json(animals);
-  });
-//accessing query property on the req object
-app.get('/api/animals', (req, res) => {
-    let results = animals;
-    console.log(req.query)
-    res.json(results);
-  });
-//make server listen
-app.listen(3001, () => {
-    console.log(`API server now on port 3001!`);
-  });
-//npm start -> API server now on port 3001!
+  let results = animals;
+  if (req.query) {
+    results = filterByQuery(req.query, results);
+  }
+  res.json(results);
+});
+
+app.get('/api/animals/:id', (req, res) => {
+  const result = findById(req.params.id, animals);
+  if (result) {
+    res.json(result);
+  } else {
+    res.send(404);
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`API server now on port ${PORT}!`);
+});
+
